@@ -5,4 +5,5 @@ CFLAGS := -Wall -Wextra -Wold-style-definition -Werror
 
 _:
 	$(CC) $(CFLAGS) main.c -o main.exe
-	.\main ||:
+	.\main
+	@ del main.exe 2>nul
