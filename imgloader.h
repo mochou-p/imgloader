@@ -39,17 +39,22 @@ bmp_t bmp_load(const char* _filepath)
     char* buf;
     long  len;
 
-    if (!(f = fopen(_filepath, "rb")))
+    if ((f = fopen(_filepath, "rb")) == NULL)
         err("fopen");
 
-    fseek(f, 0, SEEK_END);
-    len = ftell(f);
+    if (fseek(f, 0, SEEK_END) != 0)
+        err("fseek");
+
+    if ((len = ftell(f)) < 0)
+        err("ftell");
+
     rewind(f);
 
-    if (!(buf = malloc(len * sizeof(char))))
+    if ((buf = (char*) malloc(len * sizeof(char))) == NULL)
         err("malloc");
 
-    fread(buf, len, 1, f);
+    if (fread(buf, len, 1, f) != 1)
+        err("fread");
 
     if (fclose(f))
         err("fclose");
