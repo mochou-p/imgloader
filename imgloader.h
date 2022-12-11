@@ -48,24 +48,25 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
     long   len;
     int    size, pad, ofs, x, y;
 
+    buf    = NULL;
     b.data = NULL;
 
     if ((f = fopen(_filepath, "rb")) == NULL)
     {
         imgloader_puts("fopen fail");
-        goto exit;
+        goto error;
     }
 
     if (fseek(f, 0, SEEK_END))
     {
         imgloader_puts("fseek fail");
-        goto fclose_exit;
+        goto error;
     }
 
     if ((len = ftell(f)) < 0)
     {
         imgloader_puts("ftell fail");
-        goto fclose_exit;
+        goto error;
     }
 
     rewind(f);
@@ -73,25 +74,19 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
     if ((buf = (char*) malloc(sizeof(char) * len)) == NULL)
     {
         imgloader_puts("malloc fail");
-        goto fclose_exit;
+        goto error;
     }
 
     if (fread(buf, len, 1, f) != 1)
     {
         imgloader_puts("fread fail");
-        goto fclose_exit;
-    }
-
-    if (fclose(f))
-    {
-        imgloader_puts("fclose fail");
-        goto exit;
+        goto error;
     }
 
     if (buf[IMGLOADER_BMP_OFFSET_COMPRESSION] != IMGLOADER_BMP_COMPRESSION_NO)
     {
         imgloader_puts("unknown bmp compression");
-        goto fclose_exit;
+        goto error;
     }
 
     b.id[0]  = buf[IMGLOADER_BMP_OFFSET_ID    ];
@@ -101,11 +96,11 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
     b.height = buf[IMGLOADER_BMP_OFFSET_HEIGHT];
     b.bits   = buf[IMGLOADER_BMP_OFFSET_BITS  ];
 
-    size   = b.width * b.height * 3;
-    b.data = (char*) malloc(sizeof(char) * size);
+    size     = b.width * b.height * 3;
+    b.data   = (char*) malloc(sizeof(char) * size);
 
-    pad = 4 * (b.width % 4);
-    ofs = IMGLOADER_BMP_OFFSET_DATA;
+    pad      = 4 * (b.width % 4);
+    ofs      = IMGLOADER_BMP_OFFSET_DATA;
 
     for (y = b.height - 1; y >= 0; --y)
     {
@@ -119,15 +114,13 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
         ofs += pad;
     }
 
-    free(buf);
-
-    return b;
-
-fclose_exit:
-    if (fclose(f))
+error:
+    if (f != NULL && fclose(f))
         imgloader_puts("fclose fail");
 
-exit:
+    if (buf != NULL)
+        free(buf);
+
     return b;
 }
 
