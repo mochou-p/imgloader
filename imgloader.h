@@ -7,67 +7,106 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define ANSI_RED   "\x1b[31m"
-#define ANSI_RESET "\x1b[0m"
-
-#define BMP_ID_0   0x00
-#define BMP_ID_1   0x01
-#define BMP_WIDTH  0x12
-#define BMP_HEIGHT 0x16
-#define BMP_BITS   0x1C
-#define BMP_OFFSET 0x36
+#define IMGLOADER_BMP_ID_0   0x00
+#define IMGLOADER_BMP_ID_1   0x01
+#define IMGLOADER_BMP_WIDTH  0x12
+#define IMGLOADER_BMP_HEIGHT 0x16
+#define IMGLOADER_BMP_BITS   0x1C
+#define IMGLOADER_BMP_OFFSET 0x36
 
 typedef struct bmp
 {
-    char id[2];
-    int  width;
-    int  height;
-    int  bits;
-    int  first;
+    char  id[3];
+    int   width;
+    int   height;
+    int   bits;
+    char* data;
 } bmp_t;
 
-void err(const char* _msg)
+static void imgloader_free(char** _data)
 {
-    fprintf(stderr, "%serror:%s %s fail\n", ANSI_RED, ANSI_RESET, _msg);
-    exit(1);
+    if (*_data == NULL)
+        return;
+
+    free(*_data);
+    *_data = NULL;
 }
 
-bmp_t bmp_load(const char* _filepath)
+bmp_t imgloader_bmp_load(const char* _filepath)
 {
-    bmp_t b = {};
-    FILE* f;
-    char* buf;
-    long  len;
+    bmp_t  b;
+    FILE*  f;
+    char*  buf;
+    long   len;
+
+    b.data = NULL;
 
     if ((f = fopen(_filepath, "rb")) == NULL)
-        err("fopen");
+    {
+#ifdef IMGLOADER_LOG
+        puts("fopen fail");
+#endif
+        goto exit;
+    }
 
-    if (fseek(f, 0, SEEK_END) != 0)
-        err("fseek");
+    if (fseek(f, 0, SEEK_END))
+    {
+#ifdef IMGLOADER_LOG
+        puts("fseek fail");
+#endif
+        goto fclose_exit;
+    }
 
     if ((len = ftell(f)) < 0)
-        err("ftell");
+    {
+#ifdef IMGLOADER_LOG
+        puts("ftell fail");
+#endif
+        goto fclose_exit;
+    }
 
     rewind(f);
 
-    if ((buf = (char*) malloc(len * sizeof(char))) == NULL)
-        err("malloc");
+    if ((buf = (char*) malloc(sizeof(char) * len)) == NULL)
+    {
+#ifdef IMGLOADER_LOG
+        puts("malloc fail");
+#endif
+        goto fclose_exit;
+    }
 
     if (fread(buf, len, 1, f) != 1)
-        err("fread");
+    {
+#ifdef IMGLOADER_LOG
+        puts("fread fail");
+#endif
+        goto fclose_exit;
+    }
 
-    if (fclose(f))
-        err("fclose");
+    b.id[0]  = buf[IMGLOADER_BMP_ID_0  ];
+    b.id[1]  = buf[IMGLOADER_BMP_ID_1  ];
+    b.id[2]  = '\0';
+    b.width  = buf[IMGLOADER_BMP_WIDTH ];
+    b.height = buf[IMGLOADER_BMP_HEIGHT];
+    b.bits   = buf[IMGLOADER_BMP_BITS  ];
 
-    b.id[0]  = buf[BMP_ID_0  ];
-    b.id[1]  = buf[BMP_ID_1  ];
-    b.width  = buf[BMP_WIDTH ];
-    b.height = buf[BMP_HEIGHT];
-    b.bits   = buf[BMP_BITS  ];
-    b.first  = buf[BMP_OFFSET];
+    b.data = (char*) malloc(sizeof(char) * b.width * b.height);
+
+    /* i % 4 == 0 ? i : i + 4 - i % 4 */
 
     free(buf);
 
+    return b;
+
+fclose_exit:
+    if (fclose(f))
+    {
+#ifdef IMGLOADER_LOG
+        puts("fclose fail");
+#endif
+    }
+
+exit:
     return b;
 }
 
