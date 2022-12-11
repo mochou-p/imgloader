@@ -1,4 +1,4 @@
-/**/
+/* currently works properly only for 24-bit bmps */
 
 #pragma once
 #ifndef __imgloader_h_
@@ -17,14 +17,14 @@
 
 typedef struct bmp
 {
-    char  id[3];
-    int   width;
-    int   height;
-    int   bits;
-    char* data;
+    char           id[3];
+    int            width;
+    int            height;
+    int            bits;
+    unsigned char* data;
 } bmp_t;
 
-static void imgloader_free(char** _data)
+static void imgloader_free(unsigned char** _data)
 {
     if (*_data == NULL)
         return;
@@ -42,11 +42,11 @@ static void imgloader_puts(const char* _str)
 
 static bmp_t imgloader_bmp_load(const char* _filepath)
 {
-    bmp_t  b;
-    FILE*  f;
-    char*  buf;
-    long   len;
-    int    size, pad, ofs, x, y;
+    bmp_t          b;
+    FILE*          f;
+    unsigned char* buf;
+    long           len;
+    int            size, pad, ofs, x, y;
 
     buf    = NULL;
     b.data = NULL;
@@ -71,7 +71,7 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
 
     rewind(f);
 
-    if ((buf = (char*) malloc(sizeof(char) * len)) == NULL)
+    if ((buf = (unsigned char*) malloc(sizeof(unsigned char) * len)) == NULL)
     {
         imgloader_puts("malloc fail");
         goto error;
@@ -97,7 +97,7 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
     b.bits   = buf[IMGLOADER_BMP_OFFSET_BITS  ];
 
     size     = b.width * b.height * 3;
-    b.data   = (char*) malloc(sizeof(char) * size);
+    b.data   = (unsigned char*) malloc(sizeof(unsigned char) * size);
 
     pad      = 4 * (b.width % 4);
     ofs      = IMGLOADER_BMP_OFFSET_DATA;

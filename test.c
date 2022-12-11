@@ -6,7 +6,7 @@
 int main(void)
 {
     int i = 0;
-    bmp_t a = imgloader_bmp_load("res/2x3.bmp");
+    bmp_t a = imgloader_bmp_load("res/1x1.bmp");
 
     if (a.data == NULL)
         return 1;
@@ -17,9 +17,12 @@ int main(void)
         a.id, a.width, a.height, a.bits
     );
 
+    printf("| ");
     for (; i < a.width * a.height * 3; ++i)
     {
         printf("%02d ", a.data[i]);
+        if ((i+1) % 3 == 0)
+            printf("| ");
     }
 
     imgloader_free(&a.data);
