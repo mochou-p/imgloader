@@ -5,11 +5,14 @@
 
 int main(void)
 {
-    int i = 0;
-    bmp_t a = imgloader_bmp_load("res/1x1.bmp");
+    int i;
+    bmp_t a;
 
-    if (a.data == NULL)
+    if ((a = imgloader_bmp_load("res/1x1.bmp")).data == NULL)
+    {
+        printf("%s\n", imgloader_last_error);
         return 1;
+    }
 
     printf
     (
@@ -17,8 +20,8 @@ int main(void)
         a.id, a.width, a.height, a.bits
     );
 
-    printf("| ");
-    for (; i < a.width * a.height * 3; ++i)
+    printf("\n| ");
+    for (i = 0; i < a.width * a.height * 3; ++i)
     {
         printf("%02d ", a.data[i]);
         if ((i+1) % 3 == 0)

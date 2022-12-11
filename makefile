@@ -6,4 +6,3 @@ CFLAGS := -Wall -Wextra -Wold-style-definition -Werror
 test:
 	$(CC) $(CFLAGS) $@.c -o $@.exe
 	- .\$@ ||:
-	@ del $@.exe 2>nul

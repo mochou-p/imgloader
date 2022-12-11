@@ -1,11 +1,13 @@
 /* currently works properly only for 24-bit bmps */
 
 #pragma once
+
 #ifndef __imgloader_h_
 #define __imgloader_h_
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define IMGLOADER_BMP_OFFSET_ID          0x00
 #define IMGLOADER_BMP_OFFSET_WIDTH       0x12
@@ -13,6 +15,7 @@
 #define IMGLOADER_BMP_OFFSET_BITS        0x1C
 #define IMGLOADER_BMP_OFFSET_COMPRESSION 0x1E
 #define IMGLOADER_BMP_OFFSET_DATA        0x36
+
 #define IMGLOADER_BMP_COMPRESSION_NO     0x00
 
 typedef struct bmp
@@ -24,6 +27,8 @@ typedef struct bmp
     unsigned char* data;
 } bmp_t;
 
+static char imgloader_last_error[24] = "no error";
+
 static void imgloader_free(unsigned char** _data)
 {
     if (*_data == NULL)
@@ -31,13 +36,6 @@ static void imgloader_free(unsigned char** _data)
 
     free(*_data);
     *_data = NULL;
-}
-
-static void imgloader_puts(const char* _str)
-{
-#ifdef IMGLOADER_LOG
-    puts(_str);
-#endif
 }
 
 static bmp_t imgloader_bmp_load(const char* _filepath)
@@ -53,19 +51,19 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
 
     if ((f = fopen(_filepath, "rb")) == NULL)
     {
-        imgloader_puts("fopen fail");
+        strcpy(imgloader_last_error, "fopen fail");
         goto error;
     }
 
     if (fseek(f, 0, SEEK_END))
     {
-        imgloader_puts("fseek fail");
+        strcpy(imgloader_last_error, "fseek fail");
         goto error;
     }
 
     if ((len = ftell(f)) < 0)
     {
-        imgloader_puts("ftell fail");
+        strcpy(imgloader_last_error, "ftell fail");
         goto error;
     }
 
@@ -73,19 +71,19 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
 
     if ((buf = (unsigned char*) malloc(sizeof(unsigned char) * len)) == NULL)
     {
-        imgloader_puts("malloc fail");
+        strcpy(imgloader_last_error, "malloc fail");
         goto error;
     }
 
     if (fread(buf, len, 1, f) != 1)
     {
-        imgloader_puts("fread fail");
+        strcpy(imgloader_last_error, "fread fail");
         goto error;
     }
 
     if (buf[IMGLOADER_BMP_OFFSET_COMPRESSION] != IMGLOADER_BMP_COMPRESSION_NO)
     {
-        imgloader_puts("unknown bmp compression");
+        strcpy(imgloader_last_error, "unknown bmp compression");
         goto error;
     }
 
@@ -116,7 +114,7 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
 
 error:
     if (f != NULL && fclose(f))
-        imgloader_puts("fclose fail");
+        strcpy(imgloader_last_error, "fclose fail");
 
     if (buf != NULL)
         free(buf);
