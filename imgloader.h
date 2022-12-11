@@ -82,6 +82,12 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
         goto fclose_exit;
     }
 
+    if (fclose(f))
+    {
+        imgloader_puts("fclose fail");
+        goto exit;
+    }
+
     if (buf[IMGLOADER_BMP_OFFSET_COMPRESSION] != IMGLOADER_BMP_COMPRESSION_NO)
     {
         imgloader_puts("unknown bmp compression");
