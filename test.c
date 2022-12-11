@@ -1,14 +1,13 @@
 /**/
 
-#define IMGLOADER_LOG
 #include "imgloader.h"
 
 int main(void)
 {
     int i;
-    bmp_t a;
-
-    if ((a = imgloader_bmp_load("res/1x1.bmp")).data == NULL)
+    bmp_t a = imgloader_bmp_load("res/img/bmp/1x1.bmp");
+    
+    if (a.data == NULL)
     {
         printf("%s\n", imgloader_last_error);
         return 1;
