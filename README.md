@@ -1,6 +1,6 @@
 # imgloader
 
-## usage
+## example usage
 ```c
 img_t img = imgloader_load("res/2x3.bmp");
 
@@ -10,7 +10,7 @@ if (img.data == NULL)
     /* ... (your optional error handling) */
 }
 
-/* ... (use img here if loaded successfully)
+/* ... (use img.width, img.height, img.data here)
  *
  * img.data is stored as a stream of colors
  * order is left to right, top to bottom
