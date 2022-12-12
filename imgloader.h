@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define IMGLOADER_EXT_BMP           7368034L
+#define IMGLOADER_EXT_BMP           1230794
 
 #define IMGLOADER_BMP_OFFSET_WIDTH  0x12
 #define IMGLOADER_BMP_OFFSET_HEIGHT 0x16
@@ -20,10 +20,11 @@ typedef struct img
     unsigned char* data;
 } img_t;
 
-static unsigned char* read_file          (const    char* );
-static void           imgloader_free     (unsigned char**);
-static img_t          imgloader_load     (const    char* );
-static img_t          imgloader_bmp_load (unsigned char* );
+static int            hash               (const          char* );
+static unsigned char* read_file          (const          char* );
+static void           imgloader_free     (unsigned       char**);
+static img_t          imgloader_load     (const          char* );
+static img_t          imgloader_bmp_load (const unsigned char* );
 
 static char imgloader_last_error[24] = "no error";
 
@@ -36,25 +37,37 @@ static void imgloader_free(unsigned char** _data)
     *_data = NULL;
 }
 
+static int hash(const char* _str)
+{
+    int h = 0;
+    int i = -1;
+
+    while (_str[++i])
+        h += _str[i]*(i+h)+_str[i]/(h+1);
+
+    return h;
+}
+
 static img_t imgloader_load(const char* _filepath)
 {
     unsigned char* buf;
-    long           ext;
+    char*          ext;
 
     if ((buf = read_file(_filepath)) == NULL)
         goto error;
 
-    ext = *((long*) (strchr(_filepath, '.')+1));
+    ext = strchr(_filepath, '.')+1;
 
 #ifdef DEBUG
-    printf("ext: %ld\n", ext);
+    printf("%s extension hash:\n%d\n\n", ext, hash(ext));
 #endif
 
-    switch (ext)
+    switch (hash(ext))
     {
     case IMGLOADER_EXT_BMP:
         return imgloader_bmp_load(buf);
     default:
+        strcpy(imgloader_last_error, "unknown image format");
         break;
     }
 
@@ -107,10 +120,10 @@ static unsigned char* read_file(const char* _filepath)
 
 #ifdef DEBUG
     int i = 0;
-    printf("buf:");
+    printf("%s bytes:\n", _filepath);
     for (; i < len; i++)
-        printf(" %u", buf[i]);
-    printf("\n");
+        printf("%u ", buf[i]);
+    printf("\n\n");
 #endif
 
 out:
@@ -120,7 +133,7 @@ out:
     return buf;
 }
 
-static img_t imgloader_bmp_load(unsigned char* _buf)
+static img_t imgloader_bmp_load(const unsigned char* _buf)
 {
     img_t img;
     int   size, pad, ofs, x, y;
