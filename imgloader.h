@@ -7,11 +7,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define IMGLOADER_EXT_BMP           7368034L
+
 #define IMGLOADER_BMP_OFFSET_WIDTH  0x12
 #define IMGLOADER_BMP_OFFSET_HEIGHT 0x16
 #define IMGLOADER_BMP_OFFSET_DATA   0x36
-
-#define IMGLOADER_EXT_BMP           7368034L
 
 typedef struct img
 {
@@ -45,6 +45,10 @@ static img_t imgloader_load(const char* _filepath)
         goto error;
 
     ext = *((long*) (strchr(_filepath, '.')+1));
+
+#ifdef DEBUG
+    printf("ext: %ld\n", ext);
+#endif
 
     switch (ext)
     {
@@ -101,12 +105,11 @@ static unsigned char* read_file(const char* _filepath)
         imgloader_free(&buf);
     }
 
-#ifdef PRINT_FILE
+#ifdef DEBUG
     int i = 0;
-
+    printf("buf:");
     for (; i < len; i++)
-        printf("%u ", buf[i]);
-
+        printf(" %u", buf[i]);
     printf("\n");
 #endif
 
