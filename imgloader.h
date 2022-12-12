@@ -9,21 +9,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define IMGLOADER_BMP_OFFSET_ID          0x00
 #define IMGLOADER_BMP_OFFSET_WIDTH       0x12
 #define IMGLOADER_BMP_OFFSET_HEIGHT      0x16
-#define IMGLOADER_BMP_OFFSET_BITS        0x1C
-#define IMGLOADER_BMP_OFFSET_COMPRESSION 0x1E
 #define IMGLOADER_BMP_OFFSET_DATA        0x36
-
-#define IMGLOADER_BMP_COMPRESSION_NO     0x00
 
 typedef struct bmp
 {
-    char           id[3];
     int            width;
     int            height;
-    int            bits;
     unsigned char* data;
 } bmp_t;
 
@@ -78,11 +71,18 @@ static unsigned char* read_file(const char* _filepath)
         imgloader_free(&buf);
     }
 
+#ifdef PRINT_FILE
+    int i = 0;
+
+    for (; i < len; i++)
+        printf("%u ", buf[i]);
+
+    printf("\n");
+#endif
+
 out:
     if (f != NULL && fclose(f))
-    {
         strcpy(imgloader_last_error, "fclose fail");
-    }
 
     return buf;
 }
@@ -98,18 +98,8 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
     if ((buf = read_file(_filepath)) == NULL)
         goto out;
 
-    if (buf[IMGLOADER_BMP_OFFSET_COMPRESSION] != IMGLOADER_BMP_COMPRESSION_NO)
-    {
-        strcpy(imgloader_last_error, "unknown bmp compression");
-        goto out;
-    }
-
-    b.id[0]  = buf[IMGLOADER_BMP_OFFSET_ID    ];
-    b.id[1]  = buf[IMGLOADER_BMP_OFFSET_ID + 1];
-    b.id[2]  = '\0';
-    b.width  = buf[IMGLOADER_BMP_OFFSET_WIDTH ];
-    b.height = buf[IMGLOADER_BMP_OFFSET_HEIGHT];
-    b.bits   = buf[IMGLOADER_BMP_OFFSET_BITS  ];
+    b.width  = *((int*) (buf+IMGLOADER_BMP_OFFSET_WIDTH ));
+    b.height = *((int*) (buf+IMGLOADER_BMP_OFFSET_HEIGHT));
 
     size     = b.width * b.height * 3;
     b.data   = (unsigned char*) malloc(sizeof(unsigned char) * size);
