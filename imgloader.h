@@ -29,42 +29,39 @@ typedef struct bmp
 
 static char imgloader_last_error[24] = "no error";
 
-static void imgloader_free(unsigned char** _data)
+static void imgloader_free(unsigned char** _memory)
 {
-    if (*_data == NULL)
+    if (*_memory == NULL)
         return;
 
-    free(*_data);
-    *_data = NULL;
+    free(*_memory);
+    *_memory = NULL;
 }
 
-static bmp_t imgloader_bmp_load(const char* _filepath)
+static unsigned char* read_file(const char* _filepath)
 {
-    bmp_t          b;
     FILE*          f;
     unsigned char* buf;
     long           len;
-    int            size, pad, ofs, x, y;
 
-    buf    = NULL;
-    b.data = NULL;
+    buf = NULL;
 
     if ((f = fopen(_filepath, "rb")) == NULL)
     {
         strcpy(imgloader_last_error, "fopen fail");
-        goto error;
+        goto out;
     }
 
     if (fseek(f, 0, SEEK_END))
     {
         strcpy(imgloader_last_error, "fseek fail");
-        goto error;
+        goto out;
     }
 
     if ((len = ftell(f)) < 0)
     {
         strcpy(imgloader_last_error, "ftell fail");
-        goto error;
+        goto out;
     }
 
     rewind(f);
@@ -72,19 +69,39 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
     if ((buf = (unsigned char*) malloc(sizeof(unsigned char) * len)) == NULL)
     {
         strcpy(imgloader_last_error, "malloc fail");
-        goto error;
+        goto out;
     }
 
     if (fread(buf, len, 1, f) != 1)
     {
         strcpy(imgloader_last_error, "fread fail");
-        goto error;
+        imgloader_free(&buf);
     }
+
+out:
+    if (f != NULL && fclose(f))
+    {
+        strcpy(imgloader_last_error, "fclose fail");
+    }
+
+    return buf;
+}
+
+static bmp_t imgloader_bmp_load(const char* _filepath)
+{
+    bmp_t          b;
+    unsigned char* buf;
+    int            size, pad, ofs, x, y;
+
+    b.data = NULL;
+
+    if ((buf = read_file(_filepath)) == NULL)
+        goto out;
 
     if (buf[IMGLOADER_BMP_OFFSET_COMPRESSION] != IMGLOADER_BMP_COMPRESSION_NO)
     {
         strcpy(imgloader_last_error, "unknown bmp compression");
-        goto error;
+        goto out;
     }
 
     b.id[0]  = buf[IMGLOADER_BMP_OFFSET_ID    ];
@@ -112,12 +129,8 @@ static bmp_t imgloader_bmp_load(const char* _filepath)
         ofs += pad;
     }
 
-error:
-    if (f != NULL && fclose(f))
-        strcpy(imgloader_last_error, "fclose fail");
-
-    if (buf != NULL)
-        free(buf);
+out:
+    free(buf);
 
     return b;
 }
