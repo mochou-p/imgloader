@@ -1,0 +1,4 @@
+#define _width 2
+#define _height 3
+static char _bits[] = {
+ 0x01,0x03,0x00 };
