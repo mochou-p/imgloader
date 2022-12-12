@@ -1,5 +1,3 @@
-/* currently works properly only for 24-bit bmps */
-
 #pragma once
 
 #ifndef __imgloader_h_
@@ -9,26 +7,58 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define IMGLOADER_BMP_OFFSET_WIDTH       0x12
-#define IMGLOADER_BMP_OFFSET_HEIGHT      0x16
-#define IMGLOADER_BMP_OFFSET_DATA        0x36
+#define IMGLOADER_BMP_OFFSET_WIDTH  0x12
+#define IMGLOADER_BMP_OFFSET_HEIGHT 0x16
+#define IMGLOADER_BMP_OFFSET_DATA   0x36
 
-typedef struct bmp
+#define IMGLOADER_EXT_BMP           7368034L
+
+typedef struct img
 {
     int            width;
     int            height;
     unsigned char* data;
-} bmp_t;
+} img_t;
+
+static unsigned char* read_file          (const    char* );
+static void           imgloader_free     (unsigned char**);
+static img_t          imgloader_load     (const    char* );
+static img_t          imgloader_bmp_load (unsigned char* );
 
 static char imgloader_last_error[24] = "no error";
 
-static void imgloader_free(unsigned char** _memory)
+static void imgloader_free(unsigned char** _data)
 {
-    if (*_memory == NULL)
+    if (*_data == NULL)
         return;
 
-    free(*_memory);
-    *_memory = NULL;
+    free(*_data);
+    *_data = NULL;
+}
+
+static img_t imgloader_load(const char* _filepath)
+{
+    unsigned char* buf;
+    long           ext;
+
+    if ((buf = read_file(_filepath)) == NULL)
+        goto error;
+
+    ext = *((long*) (strchr(_filepath, '.')+1));
+
+    switch (ext)
+    {
+    case IMGLOADER_EXT_BMP:
+        return imgloader_bmp_load(buf);
+    default:
+        break;
+    }
+
+    free(buf);
+
+error:
+    img_t bad_img = { .data = NULL };
+    return bad_img;
 }
 
 static unsigned char* read_file(const char* _filepath)
@@ -87,42 +117,34 @@ out:
     return buf;
 }
 
-static bmp_t imgloader_bmp_load(const char* _filepath)
+static img_t imgloader_bmp_load(unsigned char* _buf)
 {
-    bmp_t          b;
-    unsigned char* buf;
-    int            size, pad, ofs, x, y;
+    img_t img;
+    int   size, pad, ofs, x, y;
 
-    b.data = NULL;
+    ofs        = IMGLOADER_BMP_OFFSET_DATA;
 
-    if ((buf = read_file(_filepath)) == NULL)
-        goto out;
+    img.width  = *((int*) (_buf+IMGLOADER_BMP_OFFSET_WIDTH ));
+    img.height = *((int*) (_buf+IMGLOADER_BMP_OFFSET_HEIGHT));
 
-    b.width  = *((int*) (buf+IMGLOADER_BMP_OFFSET_WIDTH ));
-    b.height = *((int*) (buf+IMGLOADER_BMP_OFFSET_HEIGHT));
+    pad        = 4 * (img.width % 4);
+    size       = img.width * img.height * 3;
 
-    size     = b.width * b.height * 3;
-    b.data   = (unsigned char*) malloc(sizeof(unsigned char) * size);
+    img.data   = (unsigned char*) malloc(sizeof(unsigned char) * size);
 
-    pad      = 4 * (b.width % 4);
-    ofs      = IMGLOADER_BMP_OFFSET_DATA;
-
-    for (y = b.height - 1; y >= 0; --y)
+    for (y = img.height - 1; y >= 0; --y)
     {
-        for (x = b.width - 1; x >= 0; --x)
+        for (x = img.width - 1; x >= 0; --x)
         {
-            b.data[--size] = buf[ofs + x*3    ];
-            b.data[--size] = buf[ofs + x*3 + 1];
-            b.data[--size] = buf[ofs + x*3 + 2];
+            img.data[--size] = _buf[ofs + x*3    ];
+            img.data[--size] = _buf[ofs + x*3 + 1];
+            img.data[--size] = _buf[ofs + x*3 + 2];
         }
 
         ofs += pad;
     }
 
-out:
-    free(buf);
-
-    return b;
+    return img;
 }
 
 #endif /* __imgloader_h_ */

@@ -2,22 +2,22 @@
 
 ## usage
 ```c
-bmp_t my_bmp = imgloader_bmp_load("res/img/bmp/1x1.bmp");
+img_t img = imgloader_load("res/2x3.bmp");
 
-if (my_bmp.data == NULL)
+if (img.data == NULL)
 {
     printf("%s\n", imgloader_last_error);
     /* ... (your optional error handling) */
 }
 
-/* ... (use my_bmp here if loaded successfully)
+/* ... (use img here if loaded successfully)
  *
- * my_bmp.data is stored as a stream of colors
+ * img.data is stored as a stream of colors
  * order is left to right, top to bottom
  * { pixel_1.r, pixel_1.g, pixel_1.b, pixel_2.r, ... }
  */
 
-imgloader_free(&my_bmp.data);
+imgloader_free(&img.data);
 ```
 
 ###### everything is early and temp
