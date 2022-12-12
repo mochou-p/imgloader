@@ -10,7 +10,7 @@ if (img.data == NULL)
     /* ... (your optional error handling) */
 }
 
-/* ... (use img.width, img.height, img.data here)
+/* ... (use img.width, img.height and img.data here)
  *
  * img.data is stored as a stream of colors
  * order is left to right, top to bottom
