@@ -9,8 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define IMGLOADER_EXT_BMP 1230794
-#define IMGLOADER_EXT_PPM 1404698
+#define IMGLOADER_EXTHASH_BMP 1230794
+#define IMGLOADER_EXTHASH_PGM 1292828
+#define IMGLOADER_EXTHASH_PPM 1404698
 
 typedef struct img
 {
@@ -19,19 +20,19 @@ typedef struct img
     unsigned char* data;
 } img_t;
 
-static int            hash               (const          char* );
-static unsigned char* read_file          (const          char* );
-static void           imgloader_free     (unsigned       char**);
-static img_t          imgloader_load     (const          char* );
-static img_t          parse_bmp_file     (const unsigned char* );
-static img_t          parse_ppm_file     (const unsigned char* );
+static int            hash           (const          char* );
+static unsigned char* read_file      (const          char* );
+static void           imgloader_free (unsigned       char**);
+static img_t          imgloader_load (const          char* );
+static img_t          parse_bmp_file (const unsigned char* );
+static img_t          parse_pgm_file (const unsigned char* );
+static img_t          parse_ppm_file (const unsigned char* );
 
 static char imgloader_last_error[24] = "no error";
 
 static int hash(const char* _str)
 {
-    int h;
-    int i;
+    int h, i;
 
     h = 0; i = -1;
 
@@ -124,10 +125,13 @@ static img_t imgloader_load(const char* _filepath)
 
     switch (hash(ext))
     {
-    case IMGLOADER_EXT_BMP:
+    case IMGLOADER_EXTHASH_BMP:
         img = parse_bmp_file(buf);
         break;
-    case IMGLOADER_EXT_PPM:
+    case IMGLOADER_EXTHASH_PGM:
+        img = parse_pgm_file(buf);
+        break;
+    case IMGLOADER_EXTHASH_PPM:
         img = parse_ppm_file(buf);
         break;
     default:
@@ -146,10 +150,8 @@ static img_t parse_bmp_file(const unsigned char* _buf)
     int   size, pad, ofs, x, y;
 
     ofs        = 54;
-
     img.width  = *((int*) (_buf+18));
     img.height = *((int*) (_buf+22));
-
     pad        = 4 * (img.width % 4);
     size       = img.width * img.height * 3;
 
@@ -170,13 +172,13 @@ static img_t parse_bmp_file(const unsigned char* _buf)
     return img;
 }
 
-static img_t parse_ppm_file(const unsigned char* _buf)
+static img_t parse_pgm_file(const unsigned char* _buf)
 {
     img_t img;
-    int   i, j, k, size, end, ofs;
-    char  width[6], height[6];
+    int   i, j, k, l, size, end, ofs, fact;
+    char  width[6], height[6], maxval[4];
 
-    i = 0; j = 0; k = 0;
+    i = 0; j = 0; k = 0; l = 0;
 
     while (_buf[++i] != '\n')
         ;
@@ -187,19 +189,63 @@ static img_t parse_ppm_file(const unsigned char* _buf)
     while (_buf[++i] != '\n')
         height[k++] = _buf[i];
 
+    while (_buf[++i] != '\n')
+        maxval[l++] = _buf[i];
+
     width[j]   = '\0';
     height[k]  = '\0';
-
+    maxval[l]  = '\0';
     img.width  = atoi(width);
     img.height = atoi(height);
-
+    fact       = atoi(maxval);
     size       = img.width * img.height * 3;
-    end        = i + j + k + 3 + size;
+    end        = i + j + k + size - 1;
 
     img.data   = (unsigned char*) malloc(sizeof(unsigned char) * size);
 
     for (i = 0, ofs = end - size; ofs < end; ++ofs)
-        img.data[i++] = _buf[ofs];
+    {
+        img.data[i++] = _buf[ofs]*255/fact;
+        img.data[i++] = _buf[ofs]*255/fact;
+        img.data[i++] = _buf[ofs]*255/fact;
+    }
+
+    return img;
+}
+
+static img_t parse_ppm_file(const unsigned char* _buf)
+{
+    img_t img;
+    int   i, j, k, l, size, end, ofs, fract;
+    char  width[6], height[6], maxval[4];
+
+    i = 0; j = 0; k = 0; l = 0;
+
+    while (_buf[++i] != '\n')
+        ;
+
+    while (_buf[++i] != ' ')
+        width[j++]  = _buf[i];
+
+    while (_buf[++i] != '\n')
+        height[k++] = _buf[i];
+
+    while (_buf[++i] != '\n')
+        maxval[l++] = _buf[i];
+
+    width[j]   = '\0';
+    height[k]  = '\0';
+    maxval[l]  = '\0';
+    img.width  = atoi(width);
+    img.height = atoi(height);
+    fract      = atoi(maxval);
+    size       = img.width * img.height * 3;
+    end        = i + j + k + size - 1;
+
+    img.data   = (unsigned char*) malloc(sizeof(unsigned char) * size);
+
+    for (i = 0, ofs = end - size; ofs < end; ++ofs)
+        img.data[i++] = _buf[ofs]*255/fract;
 
     return img;
 }

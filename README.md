@@ -23,8 +23,8 @@ imgloader_free(&img.data);
 ## Supported image formats
 |Name|Extension|
 |-|-|
-|[Windows BMP Image](https://en.wikipedia.org/wiki/BMP_file_format#Example_1)|`.bmp`|
-|[PPM Image](https://en.wikipedia.org/wiki/Netpbm#PPM_example)|`.ppm`|
+|[Windows BMP Image](https://en.wikipedia.org/wiki/BMP_file_format)|`.bmp`|
+|[PPM Image](https://en.wikipedia.org/wiki/Netpbm)|`.pgm` `.ppm`|
 
 ---
 ###### *mostly early temporary implementations at the moment
