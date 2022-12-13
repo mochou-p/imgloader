@@ -1,6 +1,7 @@
 #
 
 .vscode/
-*.exe
-*.c
 makefile
+roadmap.txt
+*.c
+*.exe

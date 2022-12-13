@@ -1,3 +1,5 @@
+/**/
+
 #pragma once
 
 #ifndef __imgloader_h_
@@ -7,11 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define IMGLOADER_EXT_BMP           1230794
-
-#define IMGLOADER_BMP_OFFSET_WIDTH  0x12
-#define IMGLOADER_BMP_OFFSET_HEIGHT 0x16
-#define IMGLOADER_BMP_OFFSET_DATA   0x36
+#define IMGLOADER_EXT_BMP 1230794
+#define IMGLOADER_EXT_PPM 1404698
 
 typedef struct img
 {
@@ -24,58 +23,22 @@ static int            hash               (const          char* );
 static unsigned char* read_file          (const          char* );
 static void           imgloader_free     (unsigned       char**);
 static img_t          imgloader_load     (const          char* );
-static img_t          imgloader_bmp_load (const unsigned char* );
+static img_t          parse_bmp_file     (const unsigned char* );
+static img_t          parse_ppm_file     (const unsigned char* );
 
 static char imgloader_last_error[24] = "no error";
 
-static void imgloader_free(unsigned char** _data)
-{
-    if (*_data == NULL)
-        return;
-
-    free(*_data);
-    *_data = NULL;
-}
-
 static int hash(const char* _str)
 {
-    int h = 0;
-    int i = -1;
+    int h;
+    int i;
+
+    h = 0; i = -1;
 
     while (_str[++i])
         h += _str[i]*(i+h)+_str[i]/(h+1);
 
     return h;
-}
-
-static img_t imgloader_load(const char* _filepath)
-{
-    unsigned char* buf;
-    char*          ext;
-
-    if ((buf = read_file(_filepath)) == NULL)
-        goto error;
-
-    ext = strchr(_filepath, '.')+1;
-
-#ifdef DEBUG
-    printf("%s extension hash:\n%d\n\n", ext, hash(ext));
-#endif
-
-    switch (hash(ext))
-    {
-    case IMGLOADER_EXT_BMP:
-        return imgloader_bmp_load(buf);
-    default:
-        strcpy(imgloader_last_error, "unknown image format");
-        break;
-    }
-
-    free(buf);
-
-error:
-    img_t bad_img = { .data = NULL };
-    return bad_img;
 }
 
 static unsigned char* read_file(const char* _filepath)
@@ -133,15 +96,59 @@ out:
     return buf;
 }
 
-static img_t imgloader_bmp_load(const unsigned char* _buf)
+static void imgloader_free(unsigned char** _data)
+{
+    if (*_data == NULL)
+        return;
+
+    free(*_data);
+    *_data = NULL;
+}
+
+static img_t imgloader_load(const char* _filepath)
+{
+    img_t          img;
+    unsigned char* buf;
+    char*          ext;
+
+    img.data = NULL;
+
+    if ((buf = read_file(_filepath)) == NULL)
+        return img;
+
+    ext = strchr(_filepath, '.')+1;
+
+#ifdef DEBUG
+    printf("%s extension hash:\n%d\n\n", ext, hash(ext));
+#endif
+
+    switch (hash(ext))
+    {
+    case IMGLOADER_EXT_BMP:
+        img = parse_bmp_file(buf);
+        break;
+    case IMGLOADER_EXT_PPM:
+        img = parse_ppm_file(buf);
+        break;
+    default:
+        strcpy(imgloader_last_error, "unknown image format");
+        break;
+    }
+
+    free(buf);
+
+    return img;
+}
+
+static img_t parse_bmp_file(const unsigned char* _buf)
 {
     img_t img;
     int   size, pad, ofs, x, y;
 
-    ofs        = IMGLOADER_BMP_OFFSET_DATA;
+    ofs        = 54;
 
-    img.width  = *((int*) (_buf+IMGLOADER_BMP_OFFSET_WIDTH ));
-    img.height = *((int*) (_buf+IMGLOADER_BMP_OFFSET_HEIGHT));
+    img.width  = *((int*) (_buf+18));
+    img.height = *((int*) (_buf+22));
 
     pad        = 4 * (img.width % 4);
     size       = img.width * img.height * 3;
@@ -159,6 +166,40 @@ static img_t imgloader_bmp_load(const unsigned char* _buf)
 
         ofs += pad;
     }
+
+    return img;
+}
+
+static img_t parse_ppm_file(const unsigned char* _buf)
+{
+    img_t img;
+    int   i, j, k, size, end, ofs;
+    char  width[6], height[6];
+
+    i = 0; j = 0; k = 0;
+
+    while (_buf[++i] != '\n')
+        ;
+
+    while (_buf[++i] != ' ')
+        width[j++]  = _buf[i];
+
+    while (_buf[++i] != '\n')
+        height[k++] = _buf[i];
+
+    width[j]   = '\0';
+    height[k]  = '\0';
+
+    img.width  = atoi(width);
+    img.height = atoi(height);
+
+    size       = img.width * img.height * 3;
+    end        = i + j + k + 3 + size;
+
+    img.data   = (unsigned char*) malloc(sizeof(unsigned char) * size);
+
+    for (i = 0, ofs = end - size; ofs < end; ++ofs)
+        img.data[i++] = _buf[ofs];
 
     return img;
 }
