@@ -12,6 +12,7 @@
 #define IMGLOADER_EXTHASH_BMP 1230794
 #define IMGLOADER_EXTHASH_PGM 1292828
 #define IMGLOADER_EXTHASH_PPM 1404698
+#define IMGLOADER_EXTHASH_TGA 1192560
 
 typedef struct img
 {
@@ -27,6 +28,7 @@ static img_t          imgloader_load (const          char* );
 static img_t          parse_bmp_file (const unsigned char* );
 static img_t          parse_pgm_file (const unsigned char* );
 static img_t          parse_ppm_file (const unsigned char* );
+static img_t          parse_tga_file (const unsigned char* );
 
 static char imgloader_last_error[24] = "no error";
 
@@ -133,6 +135,9 @@ static img_t imgloader_load(const char* _filepath)
         break;
     case IMGLOADER_EXTHASH_PPM:
         img = parse_ppm_file(buf);
+        break;
+    case IMGLOADER_EXTHASH_TGA:
+        img = parse_tga_file(buf);
         break;
     default:
         strcpy(imgloader_last_error, "unknown image format");
@@ -246,6 +251,30 @@ static img_t parse_ppm_file(const unsigned char* _buf)
 
     for (i = 0, ofs = end - size; ofs < end; ++ofs)
         img.data[i++] = _buf[ofs]*255/fract;
+
+    return img;
+}
+
+static img_t parse_tga_file(const unsigned char* _buf)
+{
+    img_t img;
+    int   i, size, ofs;
+    char  width[6], height[6], maxval[4];
+
+    i = 0; ofs = 18;
+
+    img.width  = _buf[12];
+    img.height = _buf[14];
+    size       = img.width * img.height * 3;
+
+    img.data   = (unsigned char*) malloc(sizeof(unsigned char) * size);
+
+    for (; i < size ; ofs += 4)
+    {
+        img.data[i++] = _buf[ofs+2];
+        img.data[i++] = _buf[ofs+1];
+        img.data[i++] = _buf[ofs];
+    }
 
     return img;
 }

@@ -25,7 +25,10 @@ imgloader_free(&img.data);
 |-|-|
 |[Windows BMP Image](https://en.wikipedia.org/wiki/BMP_file_format)|`.bmp`|
 |[PPM Image](https://en.wikipedia.org/wiki/Netpbm)|`.pgm` `.ppm`|
+|[Truevision TGA](https://en.wikipedia.org/wiki/Truevision_TGA)|`.tga`|
 
 ---
-###### *mostly early temporary implementations at the moment
-###### *more image formats soon
+##### notes
+###### library is still at an early stage, most things will change
+###### tested on 2x3 images saved with [Krita](https://github.com/KDE/krita) with default settings
+###### coming soon: more image file formats, transparency support
