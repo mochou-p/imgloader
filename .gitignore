@@ -1,7 +1,4 @@
 #
 
 .vscode/
-makefile
-roadmap.txt
-*.c
-*.exe
+tests/

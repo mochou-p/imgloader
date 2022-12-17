@@ -119,7 +119,7 @@ static img_t imgloader_load(const char* _filepath)
     if ((buf = read_file(_filepath)) == NULL)
         return img;
 
-    ext = strchr(_filepath, '.')+1;
+    ext = strrchr(_filepath, '.')+1;
 
 #ifdef DEBUG
     printf("%s extension hash:\n%d\n\n", ext, hash(ext));
@@ -259,7 +259,6 @@ static img_t parse_tga_file(const unsigned char* _buf)
 {
     img_t img;
     int   i, size, ofs;
-    char  width[6], height[6], maxval[4];
 
     i = 0; ofs = 18;
 
